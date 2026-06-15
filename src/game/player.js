@@ -53,7 +53,9 @@ export class Player {
       gold: 0,
       emerald: 0,
       ruby: 0,
-      diamond: 0
+      diamond: 0,
+      sand_crystal: 0,
+      acid_gem: 0
     };
 
     this.maxDepth = 0;
@@ -174,7 +176,7 @@ export class Player {
     };
   }
 
-  update(dt, world, input) {
+  update(dt, world, input, speedModifier = 1) {
     this.tileX = Math.floor(this.x / TILE_SIZE);
     this.tileY = Math.floor(this.y / TILE_SIZE);
     
@@ -201,7 +203,7 @@ export class Player {
       }
     }
 
-    const moveSpeed = this.speed * dt * 60;
+    const moveSpeed = this.speed * speedModifier * dt * 60;
     const newX = this.x + moveX * moveSpeed;
     const newY = this.y + moveY * moveSpeed;
 

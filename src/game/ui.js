@@ -1,4 +1,4 @@
-import { ORE_PRICES, ORE_NAMES, UPGRADE_DEFS, TILE_SIZE, SURFACE_Y, DEPTH_BONUS_MULTIPLIER } from './constants.js';
+import { ORE_PRICES, ORE_NAMES, UPGRADE_DEFS, TILE_SIZE, SURFACE_Y, DEPTH_BONUS_MULTIPLIER, WEATHER_CONFIG } from './constants.js';
 
 export class UIManager {
   constructor(game) {
@@ -94,9 +94,52 @@ export class UIManager {
     document.getElementById('oreCoal').textContent = p.cargo.coal;
     document.getElementById('oreEmerald').textContent = p.cargo.emerald;
     document.getElementById('oreRuby').textContent = p.cargo.ruby;
+    document.getElementById('oreSandCrystal').textContent = p.cargo.sand_crystal || 0;
+    document.getElementById('oreAcidGem').textContent = p.cargo.acid_gem || 0;
 
+    this.updateWeatherUI();
     this.updateTeleportUI();
     this.checkWarnings();
+  }
+
+  updateWeatherUI() {
+    const weather = this.game.weather;
+    const weatherEl = document.getElementById('weatherStatus');
+    const weatherIconEl = document.getElementById('weatherIcon');
+    const weatherNameEl = document.getElementById('weatherName');
+    const weatherTimerEl = document.getElementById('weatherTimer');
+    const weatherWarningEl = document.getElementById('weatherWarning');
+    const warningIconEl = document.getElementById('warningIcon');
+    const warningNameEl = document.getElementById('warningName');
+    const warningTimerEl = document.getElementById('warningTimer');
+
+    if (weather.isActive()) {
+      weatherEl.classList.remove('hidden');
+      weatherIconEl.textContent = weather.getWeatherIcon();
+      weatherNameEl.textContent = weather.getWeatherName();
+      const remaining = weather.getRemainingTime();
+      weatherTimerEl.textContent = `${Math.ceil(remaining)}s`;
+
+      const weatherType = weather.getCurrentWeather();
+      if (weatherType === 'sandstorm') {
+        weatherEl.className = 'absolute top-4 right-4 bg-amber-900/80 rounded-lg p-3 border-2 border-amber-500 pointer-events-none';
+      } else if (weatherType === 'acid_rain') {
+        weatherEl.className = 'absolute top-4 right-4 bg-green-900/80 rounded-lg p-3 border-2 border-green-500 pointer-events-none';
+      }
+    } else {
+      weatherEl.classList.add('hidden');
+    }
+
+    if (weather.isWarning()) {
+      weatherWarningEl.classList.remove('hidden');
+      const warningWeather = weather.getWarningWeather();
+      const config = WEATHER_CONFIG[warningWeather];
+      warningIconEl.textContent = config.icon;
+      warningNameEl.textContent = config.name;
+      warningTimerEl.textContent = `${Math.ceil(weather.getWarningTime())}s`;
+    } else {
+      weatherWarningEl.classList.add('hidden');
+    }
   }
 
   updateTeleportUI() {
@@ -268,7 +311,9 @@ export class UIManager {
       gold: '🪙',
       emerald: '💚',
       ruby: '❤️',
-      diamond: '💎'
+      diamond: '💎',
+      sand_crystal: '🟠',
+      acid_gem: '🟢'
     };
     return icons[type] || '🪨';
   }

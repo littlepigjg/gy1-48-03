@@ -16,9 +16,65 @@ export const TILE_TYPES = {
   ORE_EMERALD: 13,
   ORE_RUBY: 14,
   ORE_DIAMOND: 15,
+  ORE_SAND_CRYSTAL: 16,
+  ORE_ACID_GEM: 17,
   CAVE: 20,
   POISON_GAS: 21,
   INSTABILITY: 22
+};
+
+export const WEATHER_TYPES = {
+  CLEAR: 'clear',
+  SANDSTORM: 'sandstorm',
+  ACID_RAIN: 'acid_rain'
+};
+
+export const WEATHER_CONFIG = {
+  sandstorm: {
+    name: '沙尘暴',
+    icon: '🌪️',
+    particleColor: '#D2B48C',
+    particleCount: 200,
+    baseChance: 0.002,
+    chanceIncreasePerDepth: 0.0001,
+    warningTime: 8,
+    minDuration: 25,
+    maxDuration: 45,
+    speedReduction: 0.4,
+    visionReduction: 0.5,
+    damagePerSecond: 0
+  },
+  acid_rain: {
+    name: '酸雨',
+    icon: '☣️',
+    particleColor: '#7FFF00',
+    particleCount: 150,
+    baseChance: 0.0015,
+    chanceIncreasePerDepth: 0.00008,
+    warningTime: 10,
+    minDuration: 20,
+    maxDuration: 35,
+    speedReduction: 0,
+    visionReduction: 0.15,
+    damagePerSecond: 3
+  }
+};
+
+export const WEATHER_NAMES = {
+  [WEATHER_TYPES.CLEAR]: '晴朗',
+  [WEATHER_TYPES.SANDSTORM]: '沙尘暴',
+  [WEATHER_TYPES.ACID_RAIN]: '酸雨'
+};
+
+export const WEATHER_ICONS = {
+  [WEATHER_TYPES.CLEAR]: '☀️',
+  [WEATHER_TYPES.SANDSTORM]: '🌪️',
+  [WEATHER_TYPES.ACID_RAIN]: '☣️'
+};
+
+export const WEATHER_SPECIAL_ORES = {
+  [WEATHER_TYPES.SANDSTORM]: 'sand_crystal',
+  [WEATHER_TYPES.ACID_RAIN]: 'acid_gem'
 };
 
 export const TILE_COLORS = {
@@ -34,6 +90,8 @@ export const TILE_COLORS = {
   [TILE_TYPES.ORE_EMERALD]: ['#50C878', '#3CB371', '#98FB98'],
   [TILE_TYPES.ORE_RUBY]: ['#E0115F', '#DC143C', '#FF69B4'],
   [TILE_TYPES.ORE_DIAMOND]: ['#00CED1', '#40E0D0', '#AFEEEE'],
+  [TILE_TYPES.ORE_SAND_CRYSTAL]: ['#F4A460', '#DEB887', '#FFDAB9'],
+  [TILE_TYPES.ORE_ACID_GEM]: ['#32CD32', '#00FF00', '#7CFC00'],
   [TILE_TYPES.CAVE]: null,
   [TILE_TYPES.POISON_GAS]: ['#7CFC00', '#90EE90', '#32CD32'],
   [TILE_TYPES.INSTABILITY]: ['#8B0000', '#8B008B', '#FF8C00']
@@ -52,6 +110,8 @@ export const TILE_HARDNESS = {
   [TILE_TYPES.ORE_EMERALD]: 4,
   [TILE_TYPES.ORE_RUBY]: 4,
   [TILE_TYPES.ORE_DIAMOND]: 5,
+  [TILE_TYPES.ORE_SAND_CRYSTAL]: 3,
+  [TILE_TYPES.ORE_ACID_GEM]: 4,
   [TILE_TYPES.CAVE]: 0,
   [TILE_TYPES.POISON_GAS]: 1,
   [TILE_TYPES.INSTABILITY]: 2
@@ -63,7 +123,9 @@ export const ORE_PRICES = {
   gold: 50,
   emerald: 100,
   ruby: 150,
-  diamond: 300
+  diamond: 300,
+  sand_crystal: 200,
+  acid_gem: 250
 };
 
 export const ORE_NAMES = {
@@ -72,7 +134,9 @@ export const ORE_NAMES = {
   gold: '金矿',
   emerald: '祖母绿',
   ruby: '红宝石',
-  diamond: '钻石'
+  diamond: '钻石',
+  sand_crystal: '沙晶石',
+  acid_gem: '酸液宝石'
 };
 
 export const TILE_ORE_MAP = {
@@ -81,7 +145,9 @@ export const TILE_ORE_MAP = {
   [TILE_TYPES.ORE_GOLD]: 'gold',
   [TILE_TYPES.ORE_EMERALD]: 'emerald',
   [TILE_TYPES.ORE_RUBY]: 'ruby',
-  [TILE_TYPES.ORE_DIAMOND]: 'diamond'
+  [TILE_TYPES.ORE_DIAMOND]: 'diamond',
+  [TILE_TYPES.ORE_SAND_CRYSTAL]: 'sand_crystal',
+  [TILE_TYPES.ORE_ACID_GEM]: 'acid_gem'
 };
 
 export const UPGRADE_DEFS = {

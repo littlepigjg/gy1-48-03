@@ -69,6 +69,8 @@
             <div>⬛ 煤炭: <span id="oreCoal">0</span></div>
             <div>💚 祖母绿: <span id="oreEmerald">0</span></div>
             <div>❤️ 红宝石: <span id="oreRuby">0</span></div>
+            <div class="text-amber-400">🟠 沙晶石: <span id="oreSandCrystal">0</span></div>
+            <div class="text-green-400">🟢 酸液宝石: <span id="oreAcidGem">0</span></div>
           </div>
         </div>
 
@@ -96,6 +98,26 @@
             <div class="text-3xl drop-shadow-lg">⬆️</div>
             <div class="text-yellow-300 text-xs font-bold bg-black/60 px-2 py-1 rounded mt-1 whitespace-nowrap">
               采矿基地
+            </div>
+          </div>
+        </div>
+
+        <div id="weatherStatus" class="absolute top-4 right-4 bg-amber-900/80 rounded-lg p-3 border-2 border-amber-500 pointer-events-none hidden">
+          <div class="flex items-center gap-2">
+            <span id="weatherIcon" class="text-2xl">🌪️</span>
+            <div>
+              <div id="weatherName" class="text-yellow-200 font-game text-xs">沙尘暴</div>
+              <div id="weatherTimer" class="text-yellow-100 text-xs">30s</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="weatherWarning" class="absolute top-24 right-4 bg-orange-900/90 rounded-lg p-3 border-2 border-orange-500 pointer-events-none animate-pulse hidden">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚠️</span>
+            <div>
+              <div class="text-orange-200 font-game text-xs">预警: <span id="warningIcon">🌪️</span> <span id="warningName">沙尘暴</span></div>
+              <div class="text-orange-100 text-xs">即将到来: <span id="warningTimer">8s</span></div>
             </div>
           </div>
         </div>

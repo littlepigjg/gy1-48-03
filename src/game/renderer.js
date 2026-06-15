@@ -42,7 +42,7 @@ export class Renderer {
     return { x: sx, y: sy };
   }
 
-  render(dt, world, player, enemies, bullets, particles, baseBuildingX, hazards = null, teleportSystem = null) {
+  render(dt, world, player, enemies, bullets, particles, baseBuildingX, hazards = null, teleportSystem = null, weather = null) {
     if (this.shakeTime > 0) {
       this.shakeTime -= dt;
       if (this.shakeTime <= 0) this.shakeStrength = 0;
@@ -63,6 +63,17 @@ export class Renderer {
     this.renderPlayer(player, teleportSystem);
     this.renderDarkness(player);
     this.renderBaseArrow(baseBuildingX, player);
+
+    if (weather) {
+      weather.renderOverlay(
+        this.ctx,
+        player,
+        this.canvas.width,
+        this.canvas.height,
+        { x: this.camX, y: this.camY }
+      );
+      weather.renderParticles(this.ctx);
+    }
   }
 
   renderSky() {
@@ -245,7 +256,7 @@ export class Renderer {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(screen.x, screen.y, TILE_SIZE + 1, TILE_SIZE + 1);
 
-    if (tile >= TILE_TYPES.ORE_COAL && tile <= TILE_TYPES.ORE_DIAMOND) {
+    if (tile >= TILE_TYPES.ORE_COAL && tile <= TILE_TYPES.ORE_ACID_GEM) {
       const baseColors = TILE_COLORS[TILE_TYPES.STONE];
       this.ctx.fillStyle = baseColors[(x * 3 + y * 5) % 3];
       this.ctx.fillRect(screen.x, screen.y, TILE_SIZE + 1, TILE_SIZE + 1);
@@ -260,6 +271,21 @@ export class Renderer {
         this.ctx.fillStyle = colors[2];
         this.ctx.fillRect(screen.x + ox + 1, screen.y + oy + 1, size - 3, size - 3);
         this.ctx.fillStyle = colors[0];
+      }
+
+      if (tile === TILE_TYPES.ORE_SAND_CRYSTAL || tile === TILE_TYPES.ORE_ACID_GEM) {
+        const time = Date.now() * 0.003;
+        const glowIntensity = 0.3 + Math.sin(time + x + y) * 0.2;
+        this.ctx.shadowColor = colors[0];
+        this.ctx.shadowBlur = 8 * glowIntensity;
+        this.ctx.fillStyle = colors[0];
+        for (let i = 0; i < 3; i++) {
+          const ox = ((x * 13 + y * 17 + i * 23) % (TILE_SIZE - 16)) + 6;
+          const oy = ((x * 11 + y * 13 + i * 19) % (TILE_SIZE - 16)) + 6;
+          const size = 4 + (i % 2) * 2;
+          this.ctx.fillRect(screen.x + ox, screen.y + oy, size, size);
+        }
+        this.ctx.shadowBlur = 0;
       }
     }
 

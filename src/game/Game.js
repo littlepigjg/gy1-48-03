@@ -1,4 +1,4 @@
-import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, SURFACE_Y, TILE_TYPES, TILE_COLORS, DEPTH_BONUS_MULTIPLIER } from './constants.js';
+import { TILE_SIZE, WORLD_WIDTH, WORLD_HEIGHT, SURFACE_Y, TILE_TYPES, TILE_COLORS, DEPTH_BONUS_MULTIPLIER, WEATHER_CONFIG } from './constants.js';
 import { World } from './world.js';
 import { Player } from './player.js';
 import { EnemyManager } from './enemies.js';
@@ -7,6 +7,7 @@ import { UIManager } from './ui.js';
 import { ParticleSystem } from './particles.js';
 import { HazardManager } from './hazards.js';
 import { TeleportSystem } from './teleport.js';
+import { WeatherSystem } from './weather.js';
 
 export class Game {
   constructor(canvas) {
@@ -37,11 +38,13 @@ export class Game {
     this.particles = new ParticleSystem();
     this.hazards = new HazardManager();
     this.teleport = new TeleportSystem();
+    this.weather = new WeatherSystem();
     this.collapseTimer = 0;
 
     this.baseBuildingX = Math.floor(WORLD_WIDTH / 2) - 3;
 
     this.setupInput();
+    this.setupWeatherCallbacks();
     this.init();
   }
 
@@ -71,8 +74,26 @@ export class Game {
     this.particles.clear();
     this.hazards.clear();
     this.teleport = new TeleportSystem();
+    this.weather.clear();
     this.stats = { blocksDug: 0, enemiesKilled: 0 };
     this.collapseTimer = 0;
+  }
+
+  setupWeatherCallbacks() {
+    this.weather.setCallbacks({
+      onWeatherStart: (weatherType) => {
+        const config = WEATHER_CONFIG[weatherType];
+        this.ui.showWarning(`${config.icon} ${config.name}来袭！`, 3000, 'text-yellow-300');
+      },
+      onWeatherEnd: (weatherType) => {
+        const config = WEATHER_CONFIG[weatherType];
+        this.ui.showWarning(`${config.icon} ${config.name}已结束`, 2000, 'text-green-300');
+      },
+      onWarning: (weatherType, warningTime) => {
+        const config = WEATHER_CONFIG[weatherType];
+        this.ui.showWarning(`⚠️ 预警：${config.icon} ${config.name}将在${Math.ceil(warningTime)}秒后到来！`, 2500, 'text-orange-300');
+      }
+    });
   }
 
   setupInput() {
@@ -213,7 +234,8 @@ export class Game {
       this.particles,
       this.baseBuildingX,
       this.hazards,
-      this.teleport
+      this.teleport,
+      this.weather
     );
 
     this.ui.updateHUD();
@@ -227,8 +249,13 @@ export class Game {
   }
 
   update(dt) {
+    const depth = Math.max(0, this.player.tileY - SURFACE_Y);
+    
+    this.weather.update(dt, depth, this.player, this.world, this.particles);
+
     if (!this.teleport.isTeleporting()) {
-      this.player.update(dt, this.world, this.input);
+      const speedMod = this.weather.getSpeedModifier();
+      this.player.update(dt, this.world, this.input, speedMod);
     }
 
     this.teleport.update(dt, this.player, this.world, this.particles, (cost) => {
@@ -396,7 +423,9 @@ export class Game {
       gold: '#FFD700',
       emerald: '#50C878',
       ruby: '#E0115F',
-      diamond: '#00CED1'
+      diamond: '#00CED1',
+      sand_crystal: '#F4A460',
+      acid_gem: '#32CD32'
     };
     return colorMap[oreType] || '#FFFFFF';
   }
