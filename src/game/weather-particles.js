@@ -1,5 +1,15 @@
 import { WEATHER_TYPES, WEATHER_CONFIG } from './constants.js';
 
+const DEFAULT_CANVAS_WIDTH = 800;
+const DEFAULT_CANVAS_HEIGHT = 600;
+
+function getCanvasSize() {
+  if (typeof window !== 'undefined') {
+    return { width: window.innerWidth, height: window.innerHeight };
+  }
+  return { width: DEFAULT_CANVAS_WIDTH, height: DEFAULT_CANVAS_HEIGHT };
+}
+
 export class WeatherParticle {
   constructor(type, canvasWidth, canvasHeight) {
     this.type = type;
