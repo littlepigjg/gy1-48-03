@@ -65,14 +65,16 @@ export class Renderer {
     this.renderBaseArrow(baseBuildingX, player);
 
     if (weather) {
+      const depth = Math.max(0, player.tileY - SURFACE_Y);
       weather.renderOverlay(
         this.ctx,
         player,
         this.canvas.width,
         this.canvas.height,
-        { x: this.camX, y: this.camY }
+        { x: this.camX, y: this.camY },
+        depth
       );
-      weather.renderParticles(this.ctx);
+      weather.renderParticles(this.ctx, depth);
     }
   }
 

@@ -254,7 +254,7 @@ export class Game {
     this.weather.update(dt, depth, this.player, this.world, this.particles);
 
     if (!this.teleport.isTeleporting()) {
-      const speedMod = this.weather.getSpeedModifier();
+      const speedMod = this.weather.getSpeedModifier(depth);
       this.player.update(dt, this.world, this.input, speedMod);
     }
 

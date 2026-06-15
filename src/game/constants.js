@@ -35,28 +35,34 @@ export const WEATHER_CONFIG = {
     icon: '🌪️',
     particleColor: '#D2B48C',
     particleCount: 200,
-    baseChance: 0.002,
-    chanceIncreasePerDepth: 0.0001,
+    baseChance: 0.003,
+    surfacePeakDepth: 15,
+    chanceDecayRate: 0.02,
     warningTime: 8,
     minDuration: 25,
     maxDuration: 45,
     speedReduction: 0.4,
     visionReduction: 0.5,
-    damagePerSecond: 0
+    damagePerSecond: 0,
+    specialOreMaxDepth: 40,
+    specialOreMinSurfaceDist: 5
   },
   acid_rain: {
     name: '酸雨',
     icon: '☣️',
     particleColor: '#7FFF00',
     particleCount: 150,
-    baseChance: 0.0015,
-    chanceIncreasePerDepth: 0.00008,
+    baseChance: 0.0025,
+    surfacePeakDepth: 20,
+    chanceDecayRate: 0.015,
     warningTime: 10,
     minDuration: 20,
     maxDuration: 35,
     speedReduction: 0,
     visionReduction: 0.15,
-    damagePerSecond: 3
+    damagePerSecond: 3,
+    specialOreMaxDepth: 50,
+    specialOreMinSurfaceDist: 8
   }
 };
 

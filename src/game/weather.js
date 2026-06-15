@@ -9,91 +9,7 @@ import {
   WORLD_WIDTH,
   TILE_TYPES
 } from './constants.js';
-
-class WeatherParticle {
-  constructor(type, canvasWidth, canvasHeight) {
-    this.type = type;
-    this.canvasWidth = canvasWidth;
-    this.canvasHeight = canvasHeight;
-    this.reset(true);
-  }
-
-  reset(initial = false) {
-    const config = WEATHER_CONFIG[this.type];
-    if (this.type === WEATHER_TYPES.SANDSTORM) {
-      this.x = initial ? Math.random() * this.canvasWidth : -50 - Math.random() * 100;
-      this.y = Math.random() * this.canvasHeight;
-      this.vx = 4 + Math.random() * 6;
-      this.vy = (Math.random() - 0.2) * 3;
-      this.size = 1 + Math.random() * 5;
-      this.alpha = 0.2 + Math.random() * 0.6;
-      this.rotation = Math.random() * Math.PI;
-      this.rotSpeed = (Math.random() - 0.5) * 0.1;
-      this.shape = Math.random() < 0.3 ? 'circle' : 'rect';
-    } else if (this.type === WEATHER_TYPES.ACID_RAIN) {
-      this.x = Math.random() * this.canvasWidth;
-      this.y = initial ? Math.random() * this.canvasHeight : -20 - Math.random() * 50;
-      this.vx = -2 + Math.random() * 4;
-      this.vy = 8 + Math.random() * 6;
-      this.size = 1.5 + Math.random() * 2;
-      this.length = 12 + Math.random() * 18;
-      this.alpha = 0.5 + Math.random() * 0.4;
-      this.glowIntensity = 0.3 + Math.random() * 0.4;
-    }
-  }
-
-  update(dt, canvasWidth, canvasHeight) {
-    this.canvasWidth = canvasWidth;
-    this.canvasHeight = canvasHeight;
-
-    this.x += this.vx * dt * 60;
-    this.y += this.vy * dt * 60;
-
-    if (this.type === WEATHER_TYPES.SANDSTORM) {
-      this.rotation += this.rotSpeed * dt * 60;
-      if (this.x > this.canvasWidth + 50 || this.y < -50 || this.y > this.canvasHeight + 50) {
-        this.reset(false);
-      }
-    } else if (this.type === WEATHER_TYPES.ACID_RAIN) {
-      if (this.y > this.canvasHeight + 20) {
-        this.reset(false);
-      }
-    }
-  }
-
-  render(ctx, alphaScale = 1) {
-    const config = WEATHER_CONFIG[this.type];
-    ctx.save();
-    ctx.globalAlpha = this.alpha * alphaScale;
-
-    if (this.type === WEATHER_TYPES.SANDSTORM) {
-      ctx.fillStyle = config.particleColor;
-      if (this.shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        ctx.rotate(this.rotation);
-        ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size * 0.6);
-        ctx.restore();
-      }
-    } else if (this.type === WEATHER_TYPES.ACID_RAIN) {
-      ctx.shadowColor = config.particleColor;
-      ctx.shadowBlur = 5 * this.glowIntensity;
-      ctx.beginPath();
-      ctx.moveTo(this.x, this.y);
-      ctx.lineTo(this.x + this.vx * 0.3, this.y + this.length);
-      ctx.strokeStyle = config.particleColor;
-      ctx.lineWidth = this.size;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
-    ctx.restore();
-  }
-}
+import { WeatherParticle, createWeatherParticles, updateWeatherParticles, renderWeatherParticles } from './weather-particles.js';
 
 export class WeatherSystem {
   constructor() {
@@ -154,24 +70,37 @@ export class WeatherSystem {
     return this.currentWeather !== WEATHER_TYPES.CLEAR;
   }
 
-  getSpeedModifier() {
+  getSpeedModifier(depth = 0) {
     if (this.currentWeather === WEATHER_TYPES.SANDSTORM) {
       const config = WEATHER_CONFIG.sandstorm;
-      return 1 - config.speedReduction;
+      const depthFactor = this.getDepthEffectFactor(depth, config.surfacePeakDepth, config.chanceDecayRate);
+      return 1 - config.speedReduction * depthFactor;
     }
     return 1;
   }
 
-  getVisionModifier() {
+  getVisionModifier(depth = 0) {
+    let reduction = 0;
     if (this.currentWeather === WEATHER_TYPES.SANDSTORM) {
       const config = WEATHER_CONFIG.sandstorm;
-      return 1 - config.visionReduction;
-    }
-    if (this.currentWeather === WEATHER_TYPES.ACID_RAIN) {
+      const depthFactor = this.getDepthEffectFactor(depth, config.surfacePeakDepth, config.chanceDecayRate);
+      reduction = config.visionReduction * depthFactor;
+    } else if (this.currentWeather === WEATHER_TYPES.ACID_RAIN) {
       const config = WEATHER_CONFIG.acid_rain;
-      return 1 - config.visionReduction;
+      const depthFactor = this.getDepthEffectFactor(depth, config.surfacePeakDepth, config.chanceDecayRate);
+      reduction = config.visionReduction * depthFactor;
     }
-    return 1;
+    return 1 - reduction;
+  }
+
+  getDepthEffectFactor(depth, peakDepth, decayRate) {
+    if (depth <= peakDepth) {
+      const t = depth / peakDepth;
+      return 0.3 + 0.7 * t;
+    } else {
+      const depthBelow = depth - peakDepth;
+      return Math.exp(-depthBelow * decayRate);
+    }
   }
 
   update(dt, depth, player, world, particles) {
@@ -239,12 +168,26 @@ export class WeatherSystem {
 
     for (const weatherType of weatherTypes) {
       const config = WEATHER_CONFIG[weatherType];
-      const chance = config.baseChance + depth * config.chanceIncreasePerDepth;
+      const chance = this.calculateWeatherChance(depth, config);
 
       if (Math.random() < chance) {
         this.startWarning(weatherType);
         return;
       }
+    }
+  }
+
+  calculateWeatherChance(depth, config) {
+    const peakDepth = config.surfacePeakDepth;
+    const decayRate = config.chanceDecayRate;
+    const baseChance = config.baseChance;
+
+    if (depth <= peakDepth) {
+      const t = depth / peakDepth;
+      return baseChance * (0.5 + 0.5 * t);
+    } else {
+      const depthBelow = depth - peakDepth;
+      return baseChance * Math.exp(-depthBelow * decayRate);
     }
   }
 
@@ -288,32 +231,31 @@ export class WeatherSystem {
   }
 
   initParticles(weatherType) {
-    this.particles = [];
     const config = WEATHER_CONFIG[weatherType];
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
-
-    for (let i = 0; i < config.particleCount; i++) {
-      this.particles.push(new WeatherParticle(weatherType, canvasWidth, canvasHeight));
-    }
+    this.particles = createWeatherParticles(weatherType, config.particleCount, canvasWidth, canvasHeight);
     this.particleCount = config.particleCount;
   }
 
   updateParticles(dt) {
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
-    for (const p of this.particles) {
-      p.update(dt, canvasWidth, canvasHeight);
-    }
+    updateWeatherParticles(this.particles, dt, canvasWidth, canvasHeight);
   }
 
-  renderParticles(ctx) {
-    const alpha = this.getTransitionAlpha();
-    if (alpha <= 0) return;
+  renderParticles(ctx, depth = 0) {
+    const transitionAlpha = this.getTransitionAlpha();
+    if (transitionAlpha <= 0) return;
+
+    const config = WEATHER_CONFIG[this.currentWeather];
+    if (!config) return;
     
-    for (const p of this.particles) {
-      p.render(ctx, alpha);
-    }
+    const depthFactor = this.getDepthEffectFactor(depth, config.surfacePeakDepth, config.chanceDecayRate);
+    const alpha = transitionAlpha * depthFactor;
+    if (alpha <= 0.01) return;
+    
+    renderWeatherParticles(this.particles, ctx, alpha);
   }
 
   getTransitionAlpha() {
@@ -330,12 +272,16 @@ export class WeatherSystem {
     return 1;
   }
 
-  renderOverlay(ctx, player, canvasWidth, canvasHeight, camera = null) {
+  renderOverlay(ctx, player, canvasWidth, canvasHeight, camera = null, depth = 0) {
     const transitionAlpha = this.getTransitionAlpha();
 
-    if (this.currentWeather === WEATHER_TYPES.SANDSTORM && transitionAlpha > 0) {
+    const config = WEATHER_CONFIG[this.currentWeather];
+    const depthFactor = config ? this.getDepthEffectFactor(depth, config.surfacePeakDepth, config.chanceDecayRate) : 1;
+    const effectiveAlpha = transitionAlpha * depthFactor;
+
+    if (this.currentWeather === WEATHER_TYPES.SANDSTORM && effectiveAlpha > 0) {
       const config = WEATHER_CONFIG.sandstorm;
-      const baseAlpha = (0.15 + config.visionReduction * 0.25) * transitionAlpha;
+      const baseAlpha = (0.15 + config.visionReduction * 0.25) * effectiveAlpha;
       ctx.fillStyle = `rgba(210, 180, 140, ${baseAlpha})`;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
@@ -346,16 +292,17 @@ export class WeatherSystem {
         playerScreenY = player.y - camera.y;
       }
 
-      const visionMod = 1 - config.visionReduction;
+      const visionReduction = config.visionReduction * depthFactor;
+      const visionMod = 1 - visionReduction;
       const lightRadius = 220 * visionMod;
 
       const gradient = ctx.createRadialGradient(
         playerScreenX, playerScreenY, 0,
         playerScreenX, playerScreenY, lightRadius
       );
-      const innerAlpha = 0 * transitionAlpha;
-      const midAlpha = 0.25 * transitionAlpha;
-      const outerAlpha = 0.65 * transitionAlpha;
+      const innerAlpha = 0 * effectiveAlpha;
+      const midAlpha = 0.25 * effectiveAlpha;
+      const outerAlpha = 0.65 * effectiveAlpha;
       gradient.addColorStop(0, `rgba(210, 180, 140, ${innerAlpha})`);
       gradient.addColorStop(0.5, `rgba(210, 180, 140, ${midAlpha})`);
       gradient.addColorStop(1, `rgba(210, 180, 140, ${outerAlpha})`);
@@ -364,18 +311,18 @@ export class WeatherSystem {
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
 
-    if (this.currentWeather === WEATHER_TYPES.ACID_RAIN && transitionAlpha > 0) {
-      const overlayAlpha = 0.08 * transitionAlpha;
+    if (this.currentWeather === WEATHER_TYPES.ACID_RAIN && effectiveAlpha > 0) {
+      const overlayAlpha = 0.08 * effectiveAlpha;
       ctx.fillStyle = `rgba(127, 255, 0, ${overlayAlpha})`;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
 
-    if (this.warningTimer > 0) {
+    if (this.warningTimer > 0 && depth < 60) {
       const warningConfig = WEATHER_CONFIG[this.warningWeather];
       const totalWarningTime = warningConfig ? warningConfig.warningTime : 5;
       const warningProgress = 1 - this.warningTimer / totalWarningTime;
       const pulse = 0.3 + Math.sin(Date.now() * 0.008) * 0.25;
-      const intensity = (0.1 + warningProgress * 0.2) * pulse;
+      const intensity = (0.1 + warningProgress * 0.2) * pulse * Math.max(0, 1 - depth / 80);
 
       const color = this.warningWeather === WEATHER_TYPES.SANDSTORM
         ? '210, 180, 140'
@@ -391,31 +338,38 @@ export class WeatherSystem {
     const specialOre = WEATHER_SPECIAL_ORES[this.currentWeather];
     if (!specialOre) return;
 
-    const spawnRadius = 25;
+    const config = WEATHER_CONFIG[this.currentWeather];
+    const maxDepth = config.specialOreMaxDepth;
+    const minSurfaceDist = config.specialOreMinSurfaceDist;
+    const minY = SURFACE_Y + minSurfaceDist;
+    const maxY = SURFACE_Y + maxDepth;
+
     const oresToSpawn = 2 + Math.floor(Math.random() * 3);
     const oreType = specialOre === 'sand_crystal' ? TILE_TYPES.ORE_SAND_CRYSTAL : TILE_TYPES.ORE_ACID_GEM;
+    const searchRadius = 40;
 
     let spawned = 0;
     let attempts = 0;
-    const maxAttempts = oresToSpawn * 5;
+    const maxAttempts = oresToSpawn * 20;
 
     while (spawned < oresToSpawn && attempts < maxAttempts) {
       attempts++;
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 8 + Math.random() * spawnRadius;
-      const tileX = Math.floor(player.tileX + Math.cos(angle) * dist);
-      const tileY = Math.floor(player.tileY + Math.sin(angle) * dist);
+
+      const tileX = Math.floor(player.tileX + (Math.random() - 0.5) * searchRadius * 2);
+      const tileY = Math.floor(minY + Math.random() * (maxY - minY));
 
       const key = `${tileX},${tileY}`;
       if (this.specialOresSpawned.has(key)) continue;
 
       if (!world.inBounds(tileX, tileY)) continue;
-      if (tileY < SURFACE_Y + 3) continue;
+      if (tileY < minY || tileY > maxY) continue;
 
       const tile = world.getTile(tileX, tileY);
       if (tile === TILE_TYPES.EMPTY || tile === TILE_TYPES.CAVE || 
           tile === TILE_TYPES.LAVA || tile === TILE_TYPES.BEDROCK) continue;
       if (this.isOreTile(tile)) continue;
+
+      if (!this.isNearExposedSurface(world, tileX, tileY, 8)) continue;
 
       world.setTile(tileX, tileY, oreType);
       this.specialOresSpawned.add(key);
@@ -434,6 +388,19 @@ export class WeatherSystem {
     }
 
     return spawned;
+  }
+
+  isNearExposedSurface(world, x, y, maxDist) {
+    for (let dy = -maxDist; dy <= 0; dy++) {
+      const checkY = y + dy;
+      if (checkY < SURFACE_Y) return true;
+      
+      const tile = world.getTile(x, checkY);
+      if (tile === TILE_TYPES.EMPTY || tile === TILE_TYPES.CAVE) {
+        return true;
+      }
+    }
+    return false;
   }
 
   isOreTile(tile) {
